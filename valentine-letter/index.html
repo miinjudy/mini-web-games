@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valentine Letter</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: "Courier New", monospace;
+      background: #fff6f2;
+      color: #5b2c2c;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      color: #c96b6b;
+      font-size: 12px;
+      animation: float 7s linear infinite;
+      opacity: 0.7;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(110vh) scale(0.8);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(-10vh) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: min(90vw, 720px);
+      min-height: 430px;
+      background: rgba(255, 250, 246, 0.92);
+      border: 3px solid #c77b7b;
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(130, 70, 70, 0.25);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+    }
+
+    .start-screen,
+    .letter-screen,
+    .final-screen {
+      width: 100%;
+      text-align: center;
+    }
+
+    .letter-button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .letter-button:hover {
+      transform: scale(1.08);
+    }
+
+    .envelope {
+      width: 140px;
+      height: 90px;
+      margin: 0 auto 20px;
+      position: relative;
+      background: #ffd6d6;
+      border: 5px solid #b96a6a;
+      image-rendering: pixelated;
+      box-shadow: 8px 8px 0 #f3aaaa;
+    }
+
+    .envelope::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(35deg, transparent 49%, #b96a6a 50%, transparent 52%),
+        linear-gradient(-35deg, transparent 49%, #b96a6a 50%, transparent 52%);
+    }
+
+    .envelope::after {
+      content: "♡";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -45%);
+      font-size: 30px;
+      color: #b96a6a;
+    }
+
+    .click-text {
+      font-size: 18px;
+      font-weight: bold;
+      color: #704040;
+    }
+
+    .window {
+      width: min(92vw, 520px);
+      margin: 0 auto;
+      border: 5px solid #bc7070;
+      background: #ffdede;
+      box-shadow: 9px 9px 0 #e8a0a0;
+    }
+
+    .window-bar {
+      height: 42px;
+      background: #d98b8b;
+      border-bottom: 5px solid #bc7070;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-weight: bold;
+      color: white;
+      letter-spacing: 2px;
+    }
+
+    .window-icons span {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 5px;
+      background: #ffe5e5;
+      border: 3px solid #bc7070;
+    }
+
+    .letter-content {
+      position: relative;
+      min-height: 280px;
+      padding: 30px 20px 40px;
+      background-image:
+        linear-gradient(45deg, rgba(255,255,255,0.4) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.4) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.4) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.4) 75%);
+      background-size: 22px 22px;
+      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      color: #542b2b;
+    }
+
+    .cat {
+      width: 120px;
+      height: 120px;
+      margin: 10px auto 18px;
+      position: relative;
+      font-size: 82px;
+      line-height: 120px;
+      animation: bounce 0.8s infinite alternate;
+    }
+
+    @keyframes bounce {
+      from {
+        transform: translateY(0);
+      }
+      to {
+        transform: translateY(-8px);
+      }
+    }
+
+    .buttons {
+      position: relative;
+      height: 80px;
+    }
+
+    .btn {
+      border: 4px solid #bc7070;
+      background: #fff4f4;
+      color: #7b3d3d;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 18px;
+      padding: 8px 22px;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 #e8a0a0;
+    }
+
+    .yes-btn {
+      position: absolute;
+      left: 28%;
+      top: 20px;
+    }
+
+    .no-btn {
+      position: absolute;
+      left: 55%;
+      top: 20px;
+      transition: left 0.18s ease, top 0.18s ease;
+    }
+
+    .final-screen {
+      display: none;
+    }
+
+    .final-card {
+      width: min(92vw, 520px);
+      margin: 0 auto;
+      border: 5px solid #bc7070;
+      background: #ffdede;
+      box-shadow: 9px 9px 0 #e8a0a0;
+      padding: 35px 25px;
+    }
+
+    .final-card h2 {
+      margin: 0 0 15px;
+      font-size: 30px;
+      color: #7b3d3d;
+    }
+
+    .final-cat {
+      font-size: 90px;
+      animation: happy 0.5s infinite alternate;
+    }
+
+    @keyframes happy {
+      from {
+        transform: rotate(-6deg) scale(1);
+      }
+      to {
+        transform: rotate(6deg) scale(1.08);
+      }
+    }
+
+    .date-text {
+      margin-top: 18px;
+      font-size: 18px;
+      line-height: 1.7;
+      font-weight: bold;
+    }
+
+    .restart {
+      margin-top: 20px;
+      font-size: 15px;
+      padding: 8px 18px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        min-height: 400px;
+        padding: 18px;
+      }
+
+      .window {
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .yes-btn {
+        left: 18%;
+      }
+
+      .no-btn {
+        left: 54%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hearts" id="hearts"></div>
+
+  <main class="container">
+    <section class="start-screen" id="startScreen">
+      <button class="letter-button" id="openLetter">
+        <div class="envelope"></div>
+        <div class="click-text">♡ Letter For You ♡</div>
+      </button>
+    </section>
+
+    <section class="letter-screen hidden" id="letterScreen">
+      <div class="window">
+        <div class="window-bar">
+          <span>LOVE</span>
+          <div class="window-icons">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="letter-content">
+          <h1>Will you go on a date with me?</h1>
+
+          <div class="cat">🐈‍⬛</div>
+
+          <div class="buttons" id="buttonArea">
+            <button class="btn yes-btn" id="yesBtn">YES</button>
+            <button class="btn no-btn" id="noBtn">NO</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-screen" id="finalScreen">
+      <div class="final-card">
+        <h2>Yippeeee!</h2>
+        <div class="final-cat">🐈‍⬛💗</div>
+
+        <div class="date-text">
+          <p><strong>Date:</strong> 이번 주말</p>
+          <p><strong>Plan:</strong> 밥 먹고 카페 가기</p>
+          <p><strong>Dress code:</strong> 예쁘게 입고 오기 ♡</p>
+        </div>
+
+        <button class="btn restart" id="restartBtn">다시 보기</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const startScreen = document.getElementById("startScreen");
+    const letterScreen = document.getElementById("letterScreen");
+    const finalScreen = document.getElementById("finalScreen");
+
+    const openLetter = document.getElementById("openLetter");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn = document.getElementById("noBtn");
+    const buttonArea = document.getElementById("buttonArea");
+    const restartBtn = document.getElementById("restartBtn");
+
+    openLetter.addEventListener("click", () => {
+      startScreen.classList.add("hidden");
+      letterScreen.classList.remove("hidden");
+    });
+
+    yesBtn.addEventListener("click", () => {
+      letterScreen.style.display = "none";
+      finalScreen.style.display = "block";
+    });
+
+    restartBtn.addEventListener("click", () => {
+      finalScreen.style.display = "none";
+      letterScreen.style.display = "block";
+    });
+
+    function moveNoButton() {
+      const areaRect = buttonArea.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+
+      const maxX = areaRect.width - btnRect.width;
+      const maxY = areaRect.height - btnRect.height;
+
+      const randomX = Math.random() * maxX;
+      const randomY = Math.random() * maxY;
+
+      noBtn.style.left = randomX + "px";
+      noBtn.style.top = randomY + "px";
+    }
+
+    noBtn.addEventListener("mouseenter", moveNoButton);
+    noBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      moveNoButton();
+    });
+
+    const hearts = document.getElementById("hearts");
+
+    for (let i = 0; i < 45; i++) {
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = Math.random() > 0.5 ? "♡" : "♥";
+
+      heart.style.left = Math.random() * 100 + "vw";
+      heart.style.animationDelay = Math.random() * 7 + "s";
+      heart.style.animationDuration = 5 + Math.random() * 5 + "s";
+      heart.style.fontSize = 8 + Math.random() * 12 + "px";
+
+      hearts.appendChild(heart);
+    }
+  </script>
+</body>
+</html>
