@@ -216,7 +216,7 @@
       position: absolute;
       left: 55%;
       top: 20px;
-      transition: left 0.18s ease, top 0.18s ease;
+      transition: left 0.06s ease, top 0.06s ease;
     }
 
     .final-screen {
@@ -386,6 +386,7 @@
     }
 
     noBtn.addEventListener("mouseenter", moveNoButton);
+    noBtn.addEventListener("mousemove", moveNoButton);
     noBtn.addEventListener("touchstart", (e) => {
       e.preventDefault();
       moveNoButton();
