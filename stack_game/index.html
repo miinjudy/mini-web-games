@@ -1,1 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stack Game</title>
 
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #15151a;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #070707;
+    }
+
+    #ui {
+      position: fixed;
+      top: 30px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #title {
+      font-size: 48px;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+
+    #score {
+      font-size: 42px;
+      font-weight: bold;
+    }
+
+    #guide {
+      margin-top: 12px;
+      font-size: 18px;
+      opacity: 0.75;
+    }
+
+    #gameOver {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 20;
+    }
+
+    #gameOverBox {
+      background: rgba(30, 30, 35, 0.95);
+      padding: 35px 45px;
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    #gameOverBox h2 {
+      margin: 0 0 15px;
+      font-size: 38px;
+    }
+
+    #finalScore {
+      font-size: 24px;
+      margin-bottom: 25px;
+    }
+
+    button {
+      border: none;
+      padding: 14px 26px;
+      border-radius: 999px;
+      font-size: 18px;
+      cursor: pointer;
+      background: white;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="game"></canvas>
+
+  <div id="ui">
+    <div id="title">Stack Game</div>
+    <div id="score">0</div>
+    <div id="guide">클릭 또는 스페이스바로 블록 쌓기</div>
+  </div>
+
+  <div id="gameOver">
+    <div id="gameOverBox">
+      <h2>Game Over</h2>
+      <div id="finalScore">Score: 0</div>
+      <button onclick="restartGame()">다시 시작</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const gameOverEl = document.getElementById("gameOver");
+    const finalScoreEl = document.getElementById("finalScore");
+
+    let W, H, dpr;
+
+    function resizeCanvas() {
+      dpr = window.devicePixelRatio || 1;
+      W = window.innerWidth;
+      H = window.innerHeight;
+
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const BLOCK_HEIGHT = 28;
+    const START_SIZE = 180;
+    const MOVE_RANGE = 260;
+
+    let blocks = [];
+    let currentBlock = null;
+    let fallingBlocks = [];
+    let score = 0;
+    let gameOver = false;
+    let cameraY = 0;
+    let targetCameraY = 0;
+    let lastTime = 0;
+
+    function createBlock({ x, z, width, depth, y, hue }) {
+      return {
+        x,
+        z,
+        width,
+        depth,
+        y,
+        height: BLOCK_HEIGHT,
+        hue
+      };
+    }
+
+    function startGame() {
+      blocks = [];
+      fallingBlocks = [];
+      score = 0;
+      gameOver = false;
+      cameraY = 0;
+      targetCameraY = 0;
+
+      scoreEl.textContent = score;
+      gameOverEl.style.display = "none";
+
+      const base = createBlock({
+        x: 0,
+        z: 0,
+        width: START_SIZE,
+        depth: START_SIZE,
+        y: 0,
+        hue: 50
+      });
+
+      blocks.push(base);
+      spawnNextBlock();
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    function spawnNextBlock() {
+      const last = blocks[blocks.length - 1];
+
+      const axis = score % 2 === 0 ? "x" : "z";
+      const direction = Math.random() > 0.5 ? 1 : -1;
+
+      currentBlock = createBlock({
+        x: last.x,
+        z: last.z,
+        width: last.width,
+        depth: last.depth,
+        y: blocks.length * BLOCK_HEIGHT,
+        hue: (50 + score * 18) % 360
+      });
+
+      currentBlock.axis = axis;
+      currentBlock.direction = direction;
+
+      if (axis === "x") {
+        currentBlock.x = direction === 1 ? -MOVE_RANGE : MOVE_RANGE;
+      } else {
+        currentBlock.z = direction === 1 ? -MOVE_RANGE : MOVE_RANGE;
+      }
+    }
+
+    function placeBlock() {
+      if (gameOver) return;
+
+      const last = blocks[blocks.length - 1];
+      const current = currentBlock;
+
+      const axis = current.axis;
+      const sizeKey = axis === "x" ? "width" : "depth";
+
+      const currentSize = current[sizeKey];
+      const lastSize = last[sizeKey];
+
+      const currentStart = current[axis] - currentSize / 2;
+      const currentEnd = current[axis] + currentSize / 2;
+
+      const lastStart = last[axis] - lastSize / 2;
+      const lastEnd = last[axis] + lastSize / 2;
+
+      const overlapStart = Math.max(currentStart, lastStart);
+      const overlapEnd = Math.min(currentEnd, lastEnd);
+      const overlap = overlapEnd - overlapStart;
+
+      if (overlap <= 0) {
+        endGame();
+        return;
+      }
+
+      // 잘려 나가는 블록 만들기
+      if (currentStart < overlapStart) {
+        createFallingPiece(current, axis, sizeKey, currentStart, overlapStart);
+      }
+
+      if (currentEnd > overlapEnd) {
+        createFallingPiece(current, axis, sizeKey, overlapEnd, currentEnd);
+      }
+
+      // 남은 블록만 쌓기
+      current[axis] = (overlapStart + overlapEnd) / 2;
+      current[sizeKey] = overlap;
+
+      delete current.axis;
+      delete current.direction;
+
+      blocks.push(current);
+
+      score++;
+      scoreEl.textContent = score;
+
+      targetCameraY = Math.max(0, (blocks.length - 6) * BLOCK_HEIGHT * 1.35);
+
+      spawnNextBlock();
+    }
+
+    function createFallingPiece(original, axis, sizeKey, start, end) {
+      const piece = { ...original };
+
+      piece[axis] = (start + end) / 2;
+      piece[sizeKey] = end - start;
+      piece.fallSpeed = 0;
+
+      fallingBlocks.push(piece);
+    }
+
+    function endGame() {
+      gameOver = true;
+      finalScoreEl.textContent = "Score: " + score;
+      gameOverEl.style.display = "flex";
+    }
+
+    function project(x, z, y) {
+      const isoX = (x - z) * 0.75;
+      const isoY = (x + z) * 0.36 - y * 1.35;
+
+      return {
+        x: W / 2 + isoX,
+        y: H * 0.72 + isoY + cameraY
+      };
+    }
+
+    function drawPolygon(points, color) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function drawBlock(block) {
+      const x = block.x;
+      const z = block.z;
+      const y = block.y;
+
+      const w = block.width;
+      const d = block.depth;
+      const h = block.height;
+
+      const hue = block.hue;
+
+      const topColor = `hsl(${hue}, 95%, 55%)`;
+      const leftColor = `hsl(${hue}, 95%, 34%)`;
+      const rightColor = `hsl(${hue}, 95%, 43%)`;
+
+      const A = project(x - w / 2, z - d / 2, y + h);
+      const B = project(x + w / 2, z - d / 2, y + h);
+      const C = project(x + w / 2, z + d / 2, y + h);
+      const D = project(x - w / 2, z + d / 2, y + h);
+
+      const A2 = project(x - w / 2, z - d / 2, y);
+      const B2 = project(x + w / 2, z - d / 2, y);
+      const C2 = project(x + w / 2, z + d / 2, y);
+      const D2 = project(x - w / 2, z + d / 2, y);
+
+      drawPolygon([D, C, C2, D2], leftColor);
+      drawPolygon([B, C, C2, B2], rightColor);
+      drawPolygon([A, B, C, D], topColor);
+    }
+
+    function update(deltaTime) {
+      if (!gameOver && currentBlock) {
+        const speed = 140 + score * 8;
+        const axis = currentBlock.axis;
+
+        currentBlock[axis] += currentBlock.direction * speed * deltaTime;
+
+        if (currentBlock[axis] > MOVE_RANGE) {
+          currentBlock[axis] = MOVE_RANGE;
+          currentBlock.direction = -1;
+        }
+
+        if (currentBlock[axis] < -MOVE_RANGE) {
+          currentBlock[axis] = -MOVE_RANGE;
+          currentBlock.direction = 1;
+        }
+      }
+
+      for (const piece of fallingBlocks) {
+        piece.fallSpeed += 500 * deltaTime;
+        piece.y -= piece.fallSpeed * deltaTime;
+      }
+
+      fallingBlocks = fallingBlocks.filter(piece => piece.y > -200);
+
+      cameraY += (targetCameraY - cameraY) * 0.08;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // 배경
+      ctx.fillStyle = "#050505";
+      ctx.fillRect(0, 0, W, H);
+
+      // 바닥 그림자
+      ctx.beginPath();
+      ctx.ellipse(W / 2, H * 0.76 + cameraY, 170, 45, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+      ctx.fill();
+
+      const allBlocks = [...blocks, ...fallingBlocks];
+
+      if (!gameOver && currentBlock) {
+        allBlocks.push(currentBlock);
+      }
+
+      allBlocks.sort((a, b) => a.y - b.y);
+
+      for (const block of allBlocks) {
+        drawBlock(block);
+      }
+    }
+
+    function loop(time) {
+      const deltaTime = Math.min((time - lastTime) / 1000, 0.03);
+      lastTime = time;
+
+      update(deltaTime);
+      draw();
+
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener("pointerdown", () => {
+      if (!gameOver) {
+        placeBlock();
+      }
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+
+        if (!gameOver) {
+          placeBlock();
+        }
+      }
+    });
+
+    startGame();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
